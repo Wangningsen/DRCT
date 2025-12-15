@@ -279,27 +279,36 @@ def load_GenImage(root_path='/disk1/chenby/dataset/AIGC_data/GenImage', phase='t
 
     return total_images, labels
 
-
 def load_data(real_root_path, fake_root_path,
               phase='train', val_split=0.1, seed=2022, ):
+    # test 阶段直接用全部数据，不再切 train/val
+    test_all = (phase == 'test')
+
     # load real images
     total_real_images, total_real_captions = [], []
     for real_root in real_root_path.split(','):
-        real_images_t, real_captions_t = load_normal_data(real_root, val_split, seed, phase)
+        real_images_t, real_captions_t = load_normal_data(
+            real_root, val_split, seed, phase, test_all=test_all
+        )
         total_real_images += list(real_images_t)
         total_real_captions += list(real_captions_t)
+
     # load fake images
     total_fake_images, total_fake_captions = [], []
     for fake_root in fake_root_path.split(','):
-        fake_images_t, fake_captions_t = load_normal_data(fake_root, val_split, seed, phase)
+        fake_images_t, fake_captions_t = load_normal_data(
+            fake_root, val_split, seed, phase, test_all=test_all
+        )
         total_fake_images += list(fake_images_t)
         total_fake_captions += list(fake_captions_t)
+
     # 合并
     image_paths = total_real_images + total_fake_images
     labels = [0 for _ in total_real_images] + [1 for _ in total_fake_images]
     print(f'{phase}-total:{len(image_paths)}, real:{len(total_real_images)},fake:{len(total_fake_images)}')
 
     return image_paths, labels
+
 
 
 def load_pair_data(root_path, fake_root_path=None, phase='train', seed=2023, fake_indexes='1',
