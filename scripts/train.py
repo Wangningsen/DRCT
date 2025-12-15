@@ -2,6 +2,7 @@ import argparse
 import warnings
 import sys
 import os
+from sklearn.metrics import roc_auc_score, recall_score, precision_score, accuracy_score, f1_score, confusion_matrix
 
 
 def get_parser():
@@ -130,13 +131,22 @@ def eval_model(model, epoch, eval_loader, is_save=True, is_tta=False, threshold=
     outputs = torch.cat(outputs, dim=0).cpu().numpy()
     labels = torch.cat(labels, dim=0).cpu().numpy()
     labels[labels > 0] = 1
+
+    # 二分类预测标签: 1 表示 fake, 0 表示 real
+    pred_labels = (outputs > threshold).astype(int)
+
     auc = roc_auc_score(labels, outputs)
-    recall = recall_score(labels, outputs > threshold)
-    precision = precision_score(labels, outputs > threshold)
-    binary_acc = accuracy_score(labels, outputs > threshold)
-    f1 = f1_score(labels, outputs > threshold)
-    fnr = calculate_fnr(labels, outputs > threshold)
+    recall = recall_score(labels, pred_labels)
+    precision = precision_score(labels, pred_labels)
+    binary_acc = accuracy_score(labels, pred_labels)
+    f1 = f1_score(labels, pred_labels)
+    fnr = calculate_fnr(labels, pred_labels)
+
+    # 混淆矩阵: 行是真实标签, 列是预测标签
+    tn, fp, fn, tp = confusion_matrix(labels, pred_labels).ravel()
+
     print(f'AUC:{auc}-Recall:{recall}-Precision:{precision}-BinaryAccuracy:{binary_acc}, f1: {f1}, fnr:{fnr}')
+    print(f'TP:{tp}, FP:{fp}, TN:{tn}, FN:{fn}')
     if is_save:
         train_logger.log(phase="val", values={
             'epoch': epoch,
